@@ -10,7 +10,7 @@ from datetime import datetime
 app = Flask(__name__)
 CORS(app)
 
-FONT_PATH = "/usr/share/fonts/opentype/ipafont-gothic/ipag.ttf"
+FONT_PATH = os.path.join(os.path.dirname(__file__), "fonts", "ipag.ttf")
 if os.path.exists(FONT_PATH):
     pdfmetrics.registerFont(TTFont("IPAGothic", FONT_PATH))
     FONT_NAME = "IPAGothic"

@@ -1,0 +1,126 @@
+<!--
+  STUDIOの「Embed（埋め込み）→Blank」ブロックにこのコードを貼り付けてください。
+  API_URLはRenderでデプロイ後に発行されるURLに書き換えてください。
+-->
+
+<style>
+.jm-wrap { font-family: "Hiragino Kaku Gothic Pro","Meiryo",sans-serif; max-width: 560px; margin: 0 auto; }
+.jm-wrap h2 { font-size: 18px; font-weight: 600; margin-bottom: 16px; }
+.jm-row { display: grid; grid-template-columns: 90px 1fr; align-items: center; gap: 8px; margin-bottom: 10px; }
+.jm-row label { font-size: 13px; color: #555; }
+.jm-row input, .jm-row select { width: 100%; padding: 8px 10px; font-size: 14px; border: 1px solid #ccc; border-radius: 6px; font-family: inherit; }
+.jm-btn { width: 100%; padding: 12px; background: #185FA5; color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 8px; }
+.jm-btn:hover { background: #0F4A85; }
+.jm-btn:disabled { background: #aaa; cursor: default; }
+.jm-status { margin-top: 10px; padding: 10px; border-radius: 6px; font-size: 13px; display: none; }
+.jm-status.ok  { background: #E1F5EE; color: #0F6E56; display: block; }
+.jm-status.err { background: #FCEBEB; color: #A32D2D; display: block; }
+</style>
+
+<div class="jm-wrap">
+  <h2>住民票請求書 自動入力</h2>
+
+  <div class="jm-row">
+    <label>市町村</label>
+    <select id="jm-muni">
+      <option value="aomori">青森市</option>
+      <option value="hachinohe" selected>八戸市</option>
+    </select>
+  </div>
+
+  <div class="jm-row">
+    <label>氏名 *</label>
+    <input type="text" id="jm-name" placeholder="田中 太郎">
+  </div>
+
+  <div class="jm-row">
+    <label>フリガナ</label>
+    <input type="text" id="jm-furigana" placeholder="タナカ タロウ">
+  </div>
+
+  <div class="jm-row">
+    <label>住所 *</label>
+    <input type="text" id="jm-address" placeholder="八戸市内丸1-2-3">
+  </div>
+
+  <div class="jm-row">
+    <label>電話番号</label>
+    <input type="tel" id="jm-tel" placeholder="0178-00-0000">
+  </div>
+
+  <div class="jm-row">
+    <label>生年月日 *</label>
+    <input type="date" id="jm-dob">
+  </div>
+
+  <button class="jm-btn" id="jm-btn" onclick="jmGenerate()">
+    PDFに記入してダウンロード
+  </button>
+  <div class="jm-status" id="jm-status"></div>
+</div>
+
+<script>
+// ▼ RenderでデプロイしたあとにこのURLを書き換えてください
+const API_URL = "https://あなたのアプリ名.onrender.com/api/generate";
+
+// 市町村ごとの住所プレースホルダー切り替え（任意の使い勝手向上）
+const ADDRESS_PLACEHOLDER = {
+  aomori: "青森県八戸市内丸1-2-3",
+  hachinohe: "八戸市内丸1-2-3",
+};
+document.getElementById("jm-muni").addEventListener("change", (e) => {
+  const ph = ADDRESS_PLACEHOLDER[e.target.value];
+  if (ph) document.getElementById("jm-address").placeholder = ph;
+});
+
+async function jmGenerate() {
+  const name     = document.getElementById("jm-name").value.trim();
+  const furigana = document.getElementById("jm-furigana").value.trim();
+  const address  = document.getElementById("jm-address").value.trim();
+  const tel      = document.getElementById("jm-tel").value.trim();
+  const dob      = document.getElementById("jm-dob").value;
+  const muni     = document.getElementById("jm-muni").value;
+  const status   = document.getElementById("jm-status");
+  const btn      = document.getElementById("jm-btn");
+
+  if (!name || !address || !dob) {
+    status.className = "jm-status err";
+    status.textContent = "氏名・住所・生年月日は必須です";
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = "生成中…";
+  status.className = "jm-status";
+
+  try {
+    const resp = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ muni, name, furigana, address, tel, dob })
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json();
+      throw new Error(err.error || "サーバーエラー");
+    }
+
+    const blob = await resp.blob();
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href = url;
+    a.download = "住民票請求書.pdf";
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+
+    status.className = "jm-status ok";
+    status.textContent = "✓ PDFをダウンロードしました";
+  } catch(e) {
+    status.className = "jm-status err";
+    status.textContent = "エラー: " + e.message;
+  }
+
+  btn.disabled = false;
+  btn.textContent = "PDFに記入してダウンロード";
+}
+</script>

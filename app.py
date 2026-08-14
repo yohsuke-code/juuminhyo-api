@@ -31,7 +31,7 @@ MUNI_CONFIG = {
         "fields": {
             "address":  (215, 207, 9),
             "furigana": (115, 298, 9),
-            "tel":      (352, 305, 9),
+            "tel":      (365, 303, 9),
             "name":     (115, 338, 10),
         },
         "dob_fields": {
